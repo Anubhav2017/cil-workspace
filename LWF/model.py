@@ -61,8 +61,9 @@ class Model(nn.Module):
 
 		self.feature_extractor.apply(kaiming_normal_init)
 		self.fc = nn.Linear(1024, classes, bias=False)
+		self.sig = nn.Sigmoid()
 
-		self.n_classes = 1
+		self.n_classes = 0
 		self.n_known = 0
 		self.classes_map = classes_map
 
@@ -70,6 +71,7 @@ class Model(nn.Module):
 		x = self.feature_extractor(x)
 		x = x.view(x.size(0), -1)
 		x = self.fc(x)
+		x=self.sig(x)
 		return x
 
 	def increment_classes(self, new_classes):
@@ -119,6 +121,8 @@ class Model(nn.Module):
 		# else:
 		new_classes = [cl for cl in classes if class_map[cl] >= self.n_known]
 
+		print('New classes: ', new_classes)
+
 		if len(new_classes) > 0:
 			self.increment_classes(new_classes)
 			self.to(device)
@@ -138,6 +142,8 @@ class Model(nn.Module):
 				# 	for param_group in optimizer.param_groups:
 				# 		param_group['lr'] = self.lr
 
+				print((self.n_classes-self.n_known))
+
 				
 				for i, (indices, images, labels) in enumerate(loader):
 					seen_labels = []
@@ -148,11 +154,12 @@ class Model(nn.Module):
 
 					optimizer.zero_grad()
 					logits = self.forward(images)
+					# print(logits.size())
 					# print(logits)
 					# print(labels)
 					cls_loss = nn.CrossEntropyLoss()(logits, labels)
 					
-					if self.n_classes//len(new_classes) > 1:
+					if len(new_classes) > 0:
 						dist_target = prev_model.forward(images)
 						logits_dist = logits[:,:-(self.n_classes-self.n_known)]
 						dist_loss = MultiClassCrossEntropy(logits_dist, dist_target, 2)

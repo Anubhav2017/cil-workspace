@@ -13,7 +13,7 @@ class genomics_data():
 		self.train = train
 		
 		xtrain,ytrain,xtest,ytest= genomics.load_dataset()
-		print("dataset loaded")
+		# print("dataset loaded")
 		
 
 		# Select subset of classes

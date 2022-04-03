@@ -30,7 +30,7 @@ def kaiming_normal_init(m):
 class Model(nn.Module):
     def __init__(self, classes):
         # Hyper Parameters
-        self.init_lr = 0.1
+        self.init_lr = 0.001
         self.num_epochs = 40
         self.batch_size = 48
         
@@ -51,7 +51,6 @@ class Model(nn.Module):
         nn.Linear(12258,1024),
         nn.ReLU(),
         nn.Linear(1024,66),
-        nn.Softmax()
         )
 
         self.model=model

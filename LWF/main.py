@@ -24,11 +24,11 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Continuum learning')
 	parser.add_argument('--matr', default='results/acc_matr.npz', help='Accuracy matrix file name')
 	parser.add_argument('--num_classes', default=3, help='Number of new classes introduced each time', type=int)
-	parser.add_argument('--init_lr', default=0.1, type=float, help='Init learning rate')
+	parser.add_argument('--init_lr', default=0.001, type=float, help='Init learning rate')
 
-	parser.add_argument('--num_epochs', default=10, type=int, help='Number of epochs')
+	parser.add_argument('--num_epochs', default=80, type=int, help='Number of epochs')
 
-	parser.add_argument('--batch_size', default=64, type=int, help='Mini batch size')
+	parser.add_argument('--batch_size', default=48, type=int, help='Mini batch size')
 	args = parser.parse_args()
 
 	num_classes = args.num_classes
@@ -113,25 +113,25 @@ if __name__ == '__main__':
 		print ('Test Accuracy : %.2f' % (100.0 * correct / total)) 
 
 		# Accuracy matrix
-		# for i in range(model.n_known):
-		# 	test_set = genomics_data(
-		# 						train=False,
-		# 						classes=all_classes[i*num_classes: (i+1)*num_classes],
-		# 						)
-		# 	test_loader = torch.utils.data.DataLoader(test_set, batch_size=min(500, len(test_set)),
-		# 											shuffle=False, num_workers=8)
+		for i in range(model.n_known):
+			test_set = genomics_data(
+								train=False,
+								classes=all_classes[i*num_classes: (i+1)*num_classes],
+								)
+			test_loader = torch.utils.data.DataLoader(test_set, batch_size=min(500, len(test_set)),
+													shuffle=False, num_workers=8)
 
-		# 	total = 0.0
-		# 	correct = 0.0
-		# 	for indices, images, labels in test_loader:
-		# 		images = Variable(images).to(device)
-		# 		preds = model.classify(images)
-		# 		preds = [map_reverse[pred] for pred in preds.cpu().numpy()]
-		# 		total += labels.size(0)
-		# 		correct += (preds == labels.numpy()).sum()
-		# 	acc_matr[i, int(s/num_classes)] = (100 * correct / total)
+			total = 0.0
+			correct = 0.0
+			for indices, images, labels in test_loader:
+				images = Variable(images).to(device)
+				preds = model.classify(images)
+				preds = [map_reverse[pred] for pred in preds.cpu().numpy()]
+				total += labels.size(0)
+				correct += (preds == labels.numpy()).sum()
+			acc_matr[i, int(s/num_classes)] = (100 * correct / total)
 
-		# print ("Accuracy matrix", acc_matr[:int(s/num_classes + 1), :int(s/num_classes + 1)])
+		print ("Accuracy matrix", acc_matr[:int(s/num_classes + 1), :int(s/num_classes + 1)])
 
 		model.train()
 		githash = subprocess.check_output(['git', 'describe', '--always'])

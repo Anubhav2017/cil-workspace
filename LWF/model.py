@@ -34,10 +34,12 @@ class Model(nn.Module):
 	def __init__(self, classes, classes_map, args):
 		# Hyper Parameters
 		self.init_lr = args.init_lr
+
+		self.lr=self.init_lr
 		self.num_epochs = args.num_epochs
 		self.batch_size = args.batch_size
-		self.lower_rate_epoch = [int(0.7 * self.num_epochs), int(0.9 * self.num_epochs)] #hardcoded decay schedule
-		self.lr_dec_factor = 10
+		self.lower_rate_epoch = np.arange(int(0.1 * self.num_epochs), int(0.9 * self.num_epochs),10) #hardcoded decay schedule
+		self.lr_dec_factor = 1.5
 		
 		self.pretrained = False
 		self.momentum = 0.9
@@ -61,7 +63,6 @@ class Model(nn.Module):
 
 		self.feature_extractor.apply(kaiming_normal_init)
 		self.fc = nn.Linear(1024, classes, bias=False)
-		self.sig = nn.Sigmoid()
 
 		self.n_classes = 0
 		self.n_known = 0
@@ -71,7 +72,6 @@ class Model(nn.Module):
 		x = self.feature_extractor(x)
 		x = x.view(x.size(0), -1)
 		x = self.fc(x)
-		x=self.sig(x)
 		return x
 
 	def increment_classes(self, new_classes):
@@ -108,6 +108,7 @@ class Model(nn.Module):
 	def update(self, dataset, class_map):
 
 		self.compute_means = True
+		self.lr=self.init_lr
 
 		# Save a copy to compute distillation outputs
 		prev_model = copy.deepcopy(self)
@@ -123,6 +124,9 @@ class Model(nn.Module):
 
 		print('New classes: ', new_classes)
 
+		# print(self.lower_rate_epoch)
+		
+
 		if len(new_classes) > 0:
 			self.increment_classes(new_classes)
 			self.to(device)
@@ -131,18 +135,18 @@ class Model(nn.Module):
 											   shuffle=True, num_workers=8)
 
 		print("Batch Size (for n_classes classes) : ", len(dataset))
-		optimizer = optim.SGD(self.parameters(), lr=self.init_lr, momentum = self.momentum, weight_decay=self.weight_decay)
+		optimizer = optim.SGD(self.parameters(), lr=self.lr, momentum = self.momentum, weight_decay=self.weight_decay)
 
 		with tqdm(total=self.num_epochs) as pbar:
 			for epoch in range(self.num_epochs):
 				
 				# Modify learning rate
-				# if (epoch+1) in lower_rate_epoch:
-				# 	self.lr = self.lr * 1.0/lr_dec_factor
-				# 	for param_group in optimizer.param_groups:
-				# 		param_group['lr'] = self.lr
+				if (epoch+1) in self.lower_rate_epoch:
+					self.lr = self.lr * 1.0/self.lr_dec_factor
+					for param_group in optimizer.param_groups:
+						param_group['lr'] = self.lr
 
-				print((self.n_classes-self.n_known))
+				# print((self.n_classes-self.n_known))
 
 				
 				for i, (indices, images, labels) in enumerate(loader):
@@ -171,8 +175,8 @@ class Model(nn.Module):
 					optimizer.step()
 
 					if (i+1) % 1 == 0:
-						tqdm.write('Epoch [%d/%d], Iter [%d/%d] Loss: %.4f' 
-							   %(epoch+1, self.num_epochs, i+1, np.ceil(len(dataset)/self.batch_size), loss.data))
+						tqdm.write('Epoch [%d/%d], Iter [%d/%d] Loss: %.4f, lr = %.6f' 
+							   %(epoch+1, self.num_epochs, i+1, np.ceil(len(dataset)/self.batch_size), loss.data, self.lr))
 
 				pbar.update(1)
 

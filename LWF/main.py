@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
 	parser.add_argument('--num_epochs', default=40, type=int, help='Number of epochs')
 
-	parser.add_argument('--batch_size', default=48, type=int, help='Mini batch size')
+	parser.add_argument('--batch_size', default=1, type=int, help='Mini batch size')
 	args = parser.parse_args()
 
 	num_classes = args.num_classes
@@ -63,7 +63,7 @@ if __name__ == '__main__':
 	model = Model(1, class_map, args)
 	model.to(device)
 	acc_matr = np.zeros((int(total_classes/num_classes), num_iters))
-	for s in range(0, num_iters, num_classes):
+	for s in range(0, 5, num_classes):
 		# Load Datasets
 		print('Iteration: ', s)
 		#print('Algo running: ', args.algo)

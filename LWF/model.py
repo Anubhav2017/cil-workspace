@@ -43,7 +43,7 @@ class Model(nn.Module):
 		
 		self.pretrained = False
 		self.momentum = 0.9
-		self.weight_decay = 0.0001
+		self.weight_decay = 0.0005
 		# Constant to provide numerical stability while normalizing
 		self.epsilon = 1e-16
 
@@ -141,10 +141,10 @@ class Model(nn.Module):
 			for epoch in range(self.num_epochs):
 				
 				# Modify learning rate
-				if (epoch+1) in self.lower_rate_epoch:
-					self.lr = self.lr * 1.0/self.lr_dec_factor
-					for param_group in optimizer.param_groups:
-						param_group['lr'] = self.lr
+				# if (epoch+1) in self.lower_rate_epoch:
+				# 	self.lr = self.lr * 1.0/self.lr_dec_factor
+				# 	for param_group in optimizer.param_groups:
+				# 		param_group['lr'] = self.lr
 
 				# print((self.n_classes-self.n_known))
 
@@ -166,8 +166,9 @@ class Model(nn.Module):
 					if len(new_classes) > 0:
 						dist_target = prev_model.forward(images)
 						logits_dist = logits[:,:-(self.n_classes-self.n_known)]
-						dist_loss = MultiClassCrossEntropy(logits_dist, dist_target, 2)
-						loss = dist_loss+cls_loss
+						dist_loss = MultiClassCrossEntropy(logits_dist, dist_target, 1.5)
+						loss = dist_loss+ cls_loss*0.1
+						# print("yo")
 					else:
 						loss = cls_loss
 

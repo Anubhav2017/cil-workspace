@@ -23,10 +23,10 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(description='Continuum learning')
 	parser.add_argument('--matr', default='results/acc_matr.npz', help='Accuracy matrix file name')
-	parser.add_argument('--num_classes', default=3, help='Number of new classes introduced each time', type=int)
-	parser.add_argument('--init_lr', default=0.001, type=float, help='Init learning rate')
+	parser.add_argument('--num_classes', default=2, help='Number of new classes introduced each time', type=int)
+	parser.add_argument('--init_lr', default=0.00005, type=float, help='Init learning rate')
 
-	parser.add_argument('--num_epochs', default=80, type=int, help='Number of epochs')
+	parser.add_argument('--num_epochs', default=40, type=int, help='Number of epochs')
 
 	parser.add_argument('--batch_size', default=48, type=int, help='Mini batch size')
 	args = parser.parse_args()
@@ -76,8 +76,9 @@ if __name__ == '__main__':
 
 		test_set = genomics_data(
 								train=False,
-								classes=all_classes[:s+num_classes]
+								classes=all_classes[:s]
 								)
+		print("test classes", all_classes[:s+num_classes])
 		test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size,
 													shuffle=False, num_workers=8)
 
@@ -110,7 +111,8 @@ if __name__ == '__main__':
 			correct += (preds == labels.numpy()).sum()
 
 		# Test Accuracy
-		print ('Test Accuracy : %.2f' % (100.0 * correct / total)) 
+		if total > 0:
+			print ('Test Accuracy : %.2f' % (100.0 * correct / total)) 
 
 		# Accuracy matrix
 		for i in range(model.n_known):

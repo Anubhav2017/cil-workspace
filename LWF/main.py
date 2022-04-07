@@ -24,21 +24,20 @@ if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Continuum learning')
 	parser.add_argument('--matr', default='results/acc_matr.npz', help='Accuracy matrix file name')
 	parser.add_argument('--num_classes', default=2, help='Number of new classes introduced each time', type=int)
-	parser.add_argument('--init_lr', default=0.00005, type=float, help='Init learning rate')
+	parser.add_argument('--init_lr', default=0.0001, type=float, help='Init learning rate')
 
 	parser.add_argument('--num_epochs', default=40, type=int, help='Number of epochs')
 
-	parser.add_argument('--batch_size', default=1, type=int, help='Mini batch size')
+	parser.add_argument('--batch_size', default=48, type=int, help='Mini batch size')
 	args = parser.parse_args()
 
 	num_classes = args.num_classes
 
 	mean_image=None
 	total_classes = 66
-	# perm_id = np.random.permutation(total_classes)
+
 	all_classes = np.arange(total_classes)
-	# for i in range(len(all_classes)):
-	# 	all_classes[i] = perm_id[all_classes[i]]
+
 
 	n_cl_temp = 0
 	num_iters = total_classes//num_classes
@@ -63,7 +62,7 @@ if __name__ == '__main__':
 	model = Model(1, class_map, args)
 	model.to(device)
 	acc_matr = np.zeros((int(total_classes/num_classes), num_iters))
-	for s in range(0, 5, num_classes):
+	for s in range(0, num_iters, num_classes):
 		# Load Datasets
 		print('Iteration: ', s)
 		#print('Algo running: ', args.algo)
@@ -78,7 +77,6 @@ if __name__ == '__main__':
 								train=False,
 								classes=all_classes[:s]
 								)
-		print("test classes", all_classes[:s+num_classes])
 		test_loader = torch.utils.data.DataLoader(test_set, batch_size=args.batch_size,
 													shuffle=False, num_workers=8)
 
@@ -111,7 +109,7 @@ if __name__ == '__main__':
 			correct += (preds == labels.numpy()).sum()
 
 		# Test Accuracy
-		if total > 0:
+		if total>0:
 			print ('Test Accuracy : %.2f' % (100.0 * correct / total)) 
 
 		# Accuracy matrix
@@ -131,7 +129,9 @@ if __name__ == '__main__':
 				preds = [map_reverse[pred] for pred in preds.cpu().numpy()]
 				total += labels.size(0)
 				correct += (preds == labels.numpy()).sum()
-			acc_matr[i, int(s/num_classes)] = (100 * correct / total)
+
+			if total>0:
+				acc_matr[i, int(s/num_classes)] = (100 * correct / total)
 
 		print ("Accuracy matrix", acc_matr[:int(s/num_classes + 1), :int(s/num_classes + 1)])
 

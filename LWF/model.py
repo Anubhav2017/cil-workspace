@@ -42,7 +42,7 @@ class Model(nn.Module):
 		self.lr_dec_factor = 1.5
 		
 		self.pretrained = False
-		self.momentum = 0.9
+		self.momentum = 0.0
 		self.weight_decay = 0.0005
 		# Constant to provide numerical stability while normalizing
 		self.epsilon = 1e-16
@@ -55,14 +55,14 @@ class Model(nn.Module):
 		nn.Conv1d(6, 3, kernel_size=6),
 		nn.ReLU(),
 		nn.Flatten(),
-		nn.Linear(12258,1024),
+		nn.Linear(738,512),
 		nn.ReLU()
 		)
 
 		self.feature_extractor=model
 
 		self.feature_extractor.apply(kaiming_normal_init)
-		self.fc = nn.Linear(1024, classes, bias=False)
+		self.fc = nn.Linear(512, classes, bias=False)
 
 		self.n_classes = 0
 		self.n_known = 0
@@ -82,8 +82,6 @@ class Model(nn.Module):
 		out_features = self.fc.out_features
 		weight = self.fc.weight.data
 
-		weight_fe= self.feature_extractor[-2].weight.data
-
 		if self.n_known == 0:
 			new_out_features = n
 		else:
@@ -93,7 +91,6 @@ class Model(nn.Module):
 		
 		kaiming_normal_init(self.fc.weight)
 		self.fc.weight.data[:out_features] = weight
-		self.feature_extractor[-2].weight.data = weight_fe
 		self.n_classes += n
 
 	def classify(self, images):
@@ -134,15 +131,41 @@ class Model(nn.Module):
 			self.increment_classes(new_classes)
 			self.to(device)
 
-		print("prev model fc weights:",prev_model.fc.state_dict()['weight'])
-		print(prev_model.fc.weight.shape)
-		print("current model fc weights:",self.fc.state_dict()['weight'])
-		print(self.fc.weight.shape)
+		
 
 		loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size,
 											   shuffle=True, num_workers=8)
 
+		print("Batch Size (for n_classes classes) : ", len(dataset))
 		optimizer = optim.SGD(self.parameters(), lr=self.lr, momentum = self.momentum, weight_decay=self.weight_decay)
+
+		# for param in self.feature_extractor.parameters():
+		# 	param.requires_grad = False
+
+		
+		# print("warming up fc layer")
+		# for _ in range(5):
+		# 	for i, (indices, images, labels) in enumerate(loader):
+		# 		seen_labels = []
+		# 		images = Variable(torch.FloatTensor(images)).to(device)
+		# 		# print(labels)
+		# 		seen_labels = torch.LongTensor([class_map[label] for label in labels.numpy()])
+		# 		labels = Variable(seen_labels).to(device)
+		# 		# indices = indices.cuda()
+
+		# 		optimizer.zero_grad()
+		# 		logits = self.forward(images)
+
+		# 		loss = nn.CrossEntropyLoss()(logits, labels)
+
+		# 		loss.backward()
+		# 		optimizer.step()
+		
+		# print("warmup done")
+		# for param in self.feature_extractor.parameters():
+		# 	param.requires_grad = True
+
+
 
 		with tqdm(total=self.num_epochs) as pbar:
 			for epoch in range(self.num_epochs):
@@ -161,46 +184,30 @@ class Model(nn.Module):
 					images = Variable(torch.FloatTensor(images)).to(device)
 					seen_labels = torch.LongTensor([class_map[label] for label in labels.numpy()])
 					labels = Variable(seen_labels).to(device)
-
-					
-				
 					# indices = indices.cuda()
 
 					optimizer.zero_grad()
 					logits = self.forward(images)
-					# if i== 0:
-					# 	ylogits=self.feature_extractor(images)
-					# 	ylogits=ylogits.view(ylogits.size(0),-1)
-					# 	print("ylogits=",ylogits)
-					# 	print(ylogits.shape)
-
-					# 	yprev=prev_model.feature_extractor(images)
-					# 	yprev=yprev.view(yprev.size(0),-1)
-					# 	print("yprev=",yprev)
-					# 	print(yprev.shape)
 					# print(logits.size())
 					# print(logits)
 					# print(labels)
 					cls_loss = nn.CrossEntropyLoss()(logits, labels)
-					
+					loss = cls_loss
 					if len(new_classes) > 0:
 						dist_target = prev_model.forward(images)
-						if i== 2:
-							print("dist_target: ", dist_target)
-							print("logits: ", logits)
 						logits_dist = logits[:,:-(self.n_classes-self.n_known)]
-						dist_loss = MultiClassCrossEntropy(logits_dist, dist_target, 1.5)
-						loss = dist_loss+ cls_loss*0.1
-						# print("yo")
+						dist_loss = MultiClassCrossEntropy(logits_dist, dist_target, 2)
+						# dist_loss=nn.CrossEntropyLoss()(logits_dist, dist_target)
+						loss = dist_loss+0.1*cls_loss
 					else:
 						loss = cls_loss
 
 					loss.backward()
 					optimizer.step()
 
-					# if (i+1) % 1 == 0:
-					# 	tqdm.write('Epoch [%d/%d], Iter [%d/%d] Loss: %.4f, lr = %.6f' 
-					# 		   %(epoch+1, self.num_epochs, i+1, np.ceil(len(dataset)/self.batch_size), loss.data, self.lr))
+					if (i) == 0:
+						tqdm.write('Epoch [%d/%d], Iter [%d/%d] Loss: %.4f, lr = %.6f' 
+							   %(epoch+1, self.num_epochs, i+1, np.ceil(len(dataset)/self.batch_size), loss.data, self.lr))
 
 				pbar.update(1)
 

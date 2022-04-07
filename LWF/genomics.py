@@ -102,7 +102,7 @@ def generate_dataset():
             else:
                 seq+=el
     
-        words = Kmers_funct(seq, size=6)
+        words = Kmers_funct(seq, size=4)
         joined_sentence = ' '.join(words)
         all_sequences.append(joined_sentence)
 
@@ -169,10 +169,10 @@ def generate_dataset():
     # y_test=one_hot_encode_2(y_test,len(dominant_classes))
 
     x_train=np.array(x_train,dtype=np.float32)
-    x_train=np.reshape(x_train,(-1,1,4096))
+    x_train=np.reshape(x_train,(-1,1,256))
 
     x_test=np.array(x_test,dtype=np.float32)
-    x_test=np.reshape(x_test,(-1,1,4096))
+    x_test=np.reshape(x_test,(-1,1,256))
 
     # return x_train,y_train,x_test,y_test
 
@@ -196,4 +196,3 @@ def load_dataset():
 # print(y2.shape)
 
 # generate_dataset()
-

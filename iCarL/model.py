@@ -50,12 +50,12 @@ class Model(nn.Module):
 		# Network architecture
 		super(Model, self).__init__()
 		model = nn.Sequential(
-		nn.Conv1d(1, 6, kernel_size=6),
+		nn.Conv1d(1, 6, kernel_size=6, bias=False),
 		nn.ReLU(),
-		nn.Conv1d(6, 3, kernel_size=6),
+		nn.Conv1d(6, 3, kernel_size=6, bias=False),
 		nn.ReLU(),
 		nn.Flatten(),
-		nn.Linear(738,512),
+		nn.Linear(738,512, bias=False),
 		nn.ReLU()
 		)
 

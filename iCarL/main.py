@@ -72,7 +72,7 @@ if __name__ == '__main__':
 								train=True,
 								classes=all_classes[s:s+num_classes],
 								extra_classes=all_classes[:s],
-								nsamples=10)
+								nsamples=5)
 		train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batch_size,
 													shuffle=True, num_workers=8)
 
